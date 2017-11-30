@@ -25,15 +25,18 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from app.auth.models import User
 from app.club.models import Club
+from app.notice.models import Notice
 admin = Admin(app, name='microblog', template_mode='bootstrap3')
 admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(Club, db.session))
+admin.add_view(ModelView(Notice, db.session))
 
 
 #from app.blog.resources import blog_bp
 from app.club.resources import club_bp
 from app.auth.resources import auth_bp
 from app.pages.resources import page_bp
+from app.notice.resources import notice_bp
 
 #app.register_blueprint(
     #blog_bp,
@@ -53,5 +56,10 @@ app.register_blueprint(
 app.register_blueprint(
     page_bp,
     url_prefix='/page'
+)
+
+app.register_blueprint(
+    notice_bp,
+    url_prefix='/notice'
 )
 
