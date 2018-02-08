@@ -1,11 +1,9 @@
-from app import db
-
-from flask import Blueprint, request 
-
-from flask_restful import Api, Resource 
+from flask import Blueprint, request
 from flask.ext.restful import abort, fields, marshal_with, reqparse
+from flask_restful import Api, Resource
 
-from app.base.decorators import login_required, has_permissions
+from app import db
+from app.base.decorators import login_required
 from app.club.models import Club
 
 club_bp = Blueprint('club_api', __name__)
@@ -28,11 +26,12 @@ list_fields = {
     'slug': fields.String,
 }
 
+
 def get_user_from_token():
     try:
         auth_header = request.headers.get('Authorization', 'Token Null')
         token = [item.encode('ascii') for item in auth_header.split(' ')]
-        user = User.verify_auth_token(token[1]) 
+        user = User.verify_auth_token(token[1])
         return user
     except:
         return None
@@ -48,7 +47,7 @@ class ClubList(Resource):
         size = args.get("size") or 3
         club_list = Club.query.filter_by(is_show=True).paginate(page=page, per_page=size).items
         if not club_list:
-            abort(404, message="Post {} doesn't exist".format(1))
+            abort(404, message="Club doesn't exist")
         serialized_list = list(map(lambda x: x.serialize(), club_list))
         return serialized_list
 
@@ -76,6 +75,7 @@ class ClubBase(Resource):
             db.session.commit()
         return club
 
+
 class ClubDetail(Resource):
     @marshal_with(club_fields)
     def get(self, club_id):
@@ -83,6 +83,7 @@ class ClubDetail(Resource):
         if not club:
             abort(404, message="Post {} doesn't exist".format(slug))
         return club
+
 
 api.add_resource(ClubList, '/list')
 api.add_resource(ClubBase, '')

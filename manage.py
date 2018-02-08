@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-from app import app, db
-from flask.ext.script import Manager, Server
 from flask.ext.migrate import MigrateCommand
+from flask.ext.script import Manager, Server
+
+from app import app
 
 manager = Manager(app)
 manager.add_command('runserver', Server())
