@@ -1,29 +1,62 @@
-from app import db
-
-from flask import Blueprint, g
-
-from flask_restful import Api, Resource 
+from flask import Blueprint
 from flask.ext.restful import abort, fields, marshal_with, reqparse
+from flask_restful import Api, Resource
 
-from app.base.decorators import login_required, has_permissions
+from app import db
+from app.base.decorators import login_required
 from app.notice.models import Notice
 
 notice_bp = Blueprint('notice_api', __name__)
 api = Api(notice_bp)
 
+notice_fields = {
+    'id': fields.Integer,
+    'created': fields.DateTime,
+    'modified': fields.DateTime,
+    'title': fields.String,
+    'is_shown': fields.Boolean,
+    'is_public': fields.Boolean
+}
+
 
 class NoticeDetail(Resource):
-
     def get(self, notice_id):
         notice = Notice.query.filter_by(id=notice_id)
-        if not notice:
+        if not notice or notice.count() == 0:
             abort(404, message="Notice {} doesn't exist".format(notice_id))
         serialized_list = list(map(lambda x: x.serialize(), notice))
         return serialized_list
 
 
-class NoticeList(Resource):
+class NoticeRegister(Resource):
+    @marshal_with(notice_fields)
+    @login_required
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument("title", type=str)
+        parser.add_argument("contents")
+        parser.add_argument("is_shown", type=bool)
+        parser.add_argument("is_public", type=bool)
+        args = parser.parse_args()
 
+        title = args.get('title')
+        contents = args.get('contents')
+        is_shown = args.get('is_shown')
+        is_public = args.get('is_public')
+
+        if title and contents and is_shown and is_public:
+            notice = Notice(title=title,
+                            contents=contents,
+                            is_shown=is_shown,
+                            is_public=is_public)
+            db.session.add(notice)
+            db.session.commit()
+            return notice
+        else:
+            abort(400, message='Not enough fields for register.')
+
+
+class NoticeList(Resource):
     def get(self):
         parser = reqparse.RequestParser()
         parser.add_argument('page', type=int)
@@ -41,4 +74,4 @@ class NoticeList(Resource):
 
 api.add_resource(NoticeDetail, '/<notice_id>')
 api.add_resource(NoticeList, '/list')
-
+api.add_resource(NoticeRegister, '')

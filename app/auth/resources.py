@@ -1,10 +1,9 @@
-from flask import Blueprint, g
-
-from flask_restful import Api, Resource 
+from flask import Blueprint
 from flask.ext.restful import abort, fields, marshal_with, reqparse
+from flask_restful import Api, Resource
 
 from app import db
-from app.auth.models import Permission, User
+from app.auth.models import User
 from app.base.decorators import login_required
 
 auth_bp = Blueprint('auth_api', __name__)
@@ -30,7 +29,6 @@ token_fields = {
 
 
 class UserBase(Resource):
-
     def get_user(self, username):
         user = User.query.filter_by(username=username).first()
         if not user:
@@ -55,7 +53,6 @@ class UserBase(Resource):
 
 
 class UserDetail(UserBase):
-
     put_parser = reqparse.RequestParser()
     put_parser.add_argument('cur_password', type=str)
     put_parser.add_argument('new_password', type=str)
@@ -65,7 +62,7 @@ class UserDetail(UserBase):
     @login_required
     def get(self, username):
         user = self.get_user(username)
-        return user 
+        return user
 
     @login_required
     def delete(self, username):
@@ -92,7 +89,6 @@ class UserDetail(UserBase):
 
 
 class UserList(UserBase):
-
     parser = reqparse.RequestParser()
     parser.add_argument('username', type=str)
     parser.add_argument('password', type=str)
@@ -102,7 +98,7 @@ class UserList(UserBase):
     @login_required
     def get(self):
         user = User.query.all()
-        return user 
+        return user
 
     @marshal_with(user_fields)
     def post(self):
@@ -118,7 +114,6 @@ class UserList(UserBase):
 
 
 class UserRegister(UserBase):
-
     token_parser = reqparse.RequestParser()
     token_parser.add_argument('username', type=str)
     token_parser.add_argument('password', type=str)
@@ -127,13 +122,13 @@ class UserRegister(UserBase):
         args = self.token_parser.parse_args()
         try:
             if UserBase.add_user(UserBase, args['username'], args['password']):
-                #token = user.generate_auth_token()
-                #return {'token': token.decode('ascii')}, 200
-                return {'status':'success'}
+                # token = user.generate_auth_token()
+                # return {'token': token.decode('ascii')}, 200
+                return {'status': 'success'}
             else:
-                abort(401, message="Invalid register") 
+                abort(401, message="Invalid register")
         except:
-            abort(400, message="error") 
+            abort(400, message="error")
 
 
 class AuthToken(UserBase):
@@ -144,15 +139,15 @@ class AuthToken(UserBase):
     @marshal_with(token_fields)
     def post(self):
         args = self.token_parser.parse_args()
-        user = self.get_user(args['username']) 
+        user = self.get_user(args['username'])
         if user.check_password(args['password']):
             token = user.generate_auth_token()
             return {'token': token.decode('ascii')}, 200
         else:
-            abort(401, message="Invalid login info") 
+            abort(401, message="Invalid login info")
 
 
-api.add_resource(AuthToken, '/login/')
-api.add_resource(UserRegister, '/register/')
-api.add_resource(UserDetail, '/users/<string:username>')
-api.add_resource(UserList, '/users/')
+api.add_resource(AuthToken, '/login')
+api.add_resource(UserRegister, '/user')
+api.add_resource(UserDetail, '/user/<string:username>')
+api.add_resource(UserList, '/users')
