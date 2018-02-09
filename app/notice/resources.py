@@ -1,6 +1,7 @@
 from flask import Blueprint
 from flask.ext.restful import abort, fields, marshal_with, reqparse
 from flask_restful import Api, Resource
+from sqlalchemy import desc
 
 from app import db
 from app.base.decorators import login_required
@@ -28,7 +29,15 @@ class NoticeDetail(Resource):
         return serialized_list
 
 
-class NoticeRegister(Resource):
+class NoticeBase(Resource):
+    def get(self):
+        notices = Notice.query.order_by(desc(Notice.modified)).limit(10).all()
+        print(type(notices))
+        if not notices or len(notices) == 0:
+            abort(404, message="No notice exists.")
+        serialized_list = list(map(lambda x: x.serialize(), notices))
+        return serialized_list
+
     @marshal_with(notice_fields)
     @login_required
     def post(self):
@@ -74,4 +83,4 @@ class NoticeList(Resource):
 
 api.add_resource(NoticeDetail, '/<notice_id>')
 api.add_resource(NoticeList, '/list')
-api.add_resource(NoticeRegister, '')
+api.add_resource(NoticeBase, '')
