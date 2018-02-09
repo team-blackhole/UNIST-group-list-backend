@@ -1,38 +1,35 @@
-from flask import Blueprint
-from flask.ext.restful import abort, fields, marshal_with, reqparse
-from flask_restful import Api, Resource
+from flask_restplus import Api, Resource, Namespace, fields
 
 from app import db
 from app.auth.models import User
 from app.base.decorators import login_required
 
-auth_bp = Blueprint('auth_api', __name__)
-api = Api(auth_bp)
+ns = Namespace('Auth', description='User authentication')
 
-perm_fields = {
+auth_fields = ns.model('auth_fields', {
+    'username': fields.String(required=True, description='User email'),
+    'password': fields.String(required=True, description='User password'),
+})
+
+perm_fields = ns.model('perm_fields', {
     'name': fields.String,
     'code': fields.String,
-}
+})
 
-user_fields = {
-    'id': fields.Integer,
-    'created': fields.DateTime,
-    'modified': fields.DateTime,
-    'username': fields.String,
-    'password': fields.String,
+user_fields = ns.model('user_fields', {
+    'id': fields.Integer(),
+    'created': fields.DateTime(),
+    'modified': fields.DateTime(),
+    'username': fields.String(),
     'permissions': fields.Nested(perm_fields),
-}
-
-token_fields = {
-    'token': fields.String,
-}
+})
 
 
 class UserBase(Resource):
     def get_user(self, username):
         user = User.query.filter_by(username=username).first()
         if not user:
-            abort(404, message="User {} doesn't exist".format(username))
+            ns.abort(404, message="User {} doesn't exist".format(username))
         return user
 
     def add_permissions(self, user, perms):
@@ -45,20 +42,19 @@ class UserBase(Resource):
     def add_user(self, username, password):
         user = User.query.filter_by(username=username).first()
         if user:
-            abort(400, message="Username is already exist".format(username))
+            ns.abort(400, message="Username is already exist".format(username))
         user = User(username=username, password=password)
         db.session.add(user)
         db.session.commit()
         return user
 
-
 class UserDetail(UserBase):
-    put_parser = reqparse.RequestParser()
+    put_parser = ns.parser()
     put_parser.add_argument('cur_password', type=str)
     put_parser.add_argument('new_password', type=str)
     put_parser.add_argument('permissions', type=str, action='append')
 
-    @marshal_with(user_fields)
+    @ns.marshal_with(user_fields)
     @login_required
     def get(self, username):
         user = self.get_user(username)
@@ -70,7 +66,7 @@ class UserDetail(UserBase):
         db.session.commit()
         return {}, 204
 
-    @marshal_with(user_fields)
+    @ns.marshal_with(user_fields)
     @login_required
     def put(self, username):
         args = self.put_parser.parse_args()
@@ -80,7 +76,7 @@ class UserDetail(UserBase):
             if user.check_password(args['cur_password']):
                 user.set_password(args['new_password'])
             else:
-                abort(400, message="Invalid password")
+                ns.abort(400, message="Invalid password")
         # Update permissions
         self.add_permissions(user, args['permissions'])
         db.session.add(user)
@@ -89,18 +85,18 @@ class UserDetail(UserBase):
 
 
 class UserList(UserBase):
-    parser = reqparse.RequestParser()
-    parser.add_argument('username', type=str)
-    parser.add_argument('password', type=str)
+    parser = ns.parser()
+    parser.add_argument('username', type=str, help='User email')
+    parser.add_argument('password', type=str, help='User password')
     parser.add_argument('permissions', type=str, action='append')
 
-    @marshal_with(user_fields)
+    @ns.marshal_with(user_fields)
     @login_required
     def get(self):
         user = User.query.all()
         return user
 
-    @marshal_with(user_fields)
+    @ns.marshal_with(user_fields)
     def post(self):
         parsed_args = self.parser.parse_args()
         user = User(
@@ -114,40 +110,41 @@ class UserList(UserBase):
 
 
 class UserRegister(UserBase):
-    token_parser = reqparse.RequestParser()
-    token_parser.add_argument('username', type=str)
-    token_parser.add_argument('password', type=str)
+    parser = ns.parser()
+    parser.add_argument('password', type=str, help='User password', location='form')
+    parser.add_argument('username', type=str, help='User email', location='form')
 
+    @ns.doc(parser=parser)
     def post(self):
-        args = self.token_parser.parse_args()
+        args = self.parser.parse_args()
         try:
             if UserBase.add_user(UserBase, args['username'], args['password']):
                 # token = user.generate_auth_token()
                 # return {'token': token.decode('ascii')}, 200
                 return {'status': 'success'}
             else:
-                abort(401, message="Invalid register")
+                ns.abort(401, message="Invalid register")
         except:
-            abort(400, message="error")
+            ns.abort(400, message="error")
 
 
 class AuthToken(UserBase):
-    token_parser = reqparse.RequestParser()
-    token_parser.add_argument('username', type=str)
-    token_parser.add_argument('password', type=str)
+    parser = ns.parser()
+    parser.add_argument('password', type=str, help='User password', location='form')
+    parser.add_argument('username', type=str, help='User email', location='form')
 
-    @marshal_with(token_fields)
+    @ns.doc(parser=parser)
     def post(self):
-        args = self.token_parser.parse_args()
+        args = self.parser.parse_args()
         user = self.get_user(args['username'])
         if user.check_password(args['password']):
             token = user.generate_auth_token()
             return {'token': token.decode('ascii')}, 200
         else:
-            abort(401, message="Invalid login info")
+            ns.abort(401, message="Invalid login info")
 
 
-api.add_resource(AuthToken, '/login')
-api.add_resource(UserRegister, '/user')
-api.add_resource(UserDetail, '/user/<string:username>')
-api.add_resource(UserList, '/users')
+ns.add_resource(AuthToken, '/login')
+ns.add_resource(UserRegister, '/user')
+ns.add_resource(UserDetail, '/user/<string:username>')
+ns.add_resource(UserList, '/users')

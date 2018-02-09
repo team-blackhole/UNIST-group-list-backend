@@ -1,7 +1,6 @@
 import flask
 from flask.ext.sqlalchemy import SQLAlchemy
-from flask_restful import Api
-from flask.ext.restful import abort
+from flask_restplus import Api
 from flask.ext.migrate import Migrate
 from flask.ext.cors import CORS
 
@@ -32,34 +31,30 @@ admin.add_view(ModelView(Club, db.session))
 admin.add_view(ModelView(Notice, db.session))
 
 
-#from app.blog.resources import blog_bp
-from app.club.resources import club_bp
-from app.auth.resources import auth_bp
-from app.pages.resources import page_bp
-from app.notice.resources import notice_bp
+# Add router
+from app.auth.resources import ns as auth_ns
+from app.club.resources import ns as club_ns
+from app.notice.resources import ns as notice_ns
+from app.pages.resources import ns as pages_ns
 
-#app.register_blueprint(
-    #blog_bp,
-    #url_prefix='/blog'
-#)
+authorizations = {
+    'Authorization': {
+        'type': 'apiKey',
+        'in': 'header',
+        'name': 'Authorization'
+    }
+}
 
-app.register_blueprint(
-    club_bp,
-    url_prefix='/club'
+api = Api(
+    title='somoim.space',
+    version='0.1',
+    description='Backend server',
+    authorizations=authorizations
 )
 
-app.register_blueprint(
-    auth_bp,
-    url_prefix='/auth'
-)
+api.add_namespace(auth_ns, path='/auth')
+api.add_namespace(club_ns, path='/club')
+api.add_namespace(notice_ns, path='/notice')
+api.add_namespace(pages_ns, path='/page')
 
-app.register_blueprint(
-    page_bp,
-    url_prefix='/page'
-)
-
-app.register_blueprint(
-    notice_bp,
-    url_prefix='/notice'
-)
-
+api.init_app(app)
