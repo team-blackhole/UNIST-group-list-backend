@@ -1,4 +1,3 @@
-from flask.ext.restful import abort
 from flask_restplus import Resource, Namespace, fields
 from sqlalchemy import desc
 
@@ -32,7 +31,7 @@ class NoticeBase(Resource):
         notices = Notice.query.order_by(desc(Notice.modified)).limit(10).all()
         print(type(notices))
         if not notices or len(notices) == 0:
-            abort(404, message="No notice exists.")
+            ns.abort(404, message="No notice exists.")
         serialized_list = list(map(lambda x: x.serialize(), notices))
         return serialized_list
 
