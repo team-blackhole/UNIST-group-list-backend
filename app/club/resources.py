@@ -1,6 +1,5 @@
 from flask import request
-
-from flask_restplus import Namespace, Resource, fields  
+from flask_restplus import Namespace, Resource, fields
 
 from app import db
 from app.base.decorators import login_required

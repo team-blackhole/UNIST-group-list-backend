@@ -1,4 +1,4 @@
-from flask_restplus import Api, Resource, Namespace, fields
+from flask_restplus import Resource, Namespace, fields
 
 from app import db
 from app.auth.models import User
@@ -47,6 +47,7 @@ class UserBase(Resource):
         db.session.add(user)
         db.session.commit()
         return user
+
 
 class UserDetail(UserBase):
     put_parser = ns.parser()

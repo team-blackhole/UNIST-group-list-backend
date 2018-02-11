@@ -17,6 +17,7 @@ notice_fields = ns.model('notice_fields', {
     'is_public': fields.Boolean
 })
 
+
 class NoticeDetail(Resource):
     def get(self, notice_id):
         notice = Notice.query.filter_by(id=notice_id)
@@ -67,7 +68,7 @@ class NoticeList(Resource):
     parser = ns.parser()
     parser.add_argument('page', type=int)
     parser.add_argument('size', type=int)
-    
+
     @ns.doc(parser=parser)
     def get(self):
         args = self.parser.parse_args()

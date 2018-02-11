@@ -3,8 +3,8 @@ from unicodedata import normalize
 
 from app import db
 
-class Base(db.Model):
 
+class Base(db.Model):
     __abstract__ = True
 
     id = db.Column(db.Integer, primary_key=True)

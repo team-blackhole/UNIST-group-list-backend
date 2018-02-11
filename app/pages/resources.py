@@ -1,8 +1,7 @@
-from app import db
-
 from flask_restplus import Namespace, Resource, fields
 
-from app.base.decorators import login_required, has_permissions
+from app import db
+from app.base.decorators import login_required
 from app.pages.models import Page
 
 ns = Namespace('Pages', description='Pages Board - incomplete')
@@ -28,13 +27,12 @@ parser.add_argument('content', type=str)
 
 
 class PageDetail(Resource):
-
     @ns.marshal_with(page_fields)
     def get(self, slug):
         page = Page.query.filter_by(slug=slug).first()
         if not page:
             ns.abort(404, message="Page {} doesn't exist".format(slug))
-        return page 
+        return page
 
     @login_required
     def delete(self, slug):
@@ -60,7 +58,6 @@ class PageDetail(Resource):
 
 
 class PageList(Resource):
-
     @ns.marshal_with(list_fields)
     def get(self):
         pages = Page.query.all()
@@ -78,6 +75,7 @@ class PageList(Resource):
         db.session.add(page)
         db.session.commit()
         return page, 201
+
 
 ns.add_resource(PageDetail, '/<string:slug>')
 ns.add_resource(PageList, '/')
