@@ -49,6 +49,7 @@ api = Api(
     title='somoim.space',
     version='0.1',
     description='Backend server',
+    prefix='/api/v1',
     authorizations=authorizations
 )
 
