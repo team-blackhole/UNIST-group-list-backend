@@ -3,7 +3,7 @@ from app import db
 from flask_restplus import Resource, Namespace, fields
 
 from app import db
-from app.base.decorators import login_required
+from app.base.decorators import login_required, has_permissions
 from app.notice.models import Notice
 
 
@@ -37,6 +37,7 @@ class NoticeRegister(Resource):
     @ns.marshal_with(notice_fields)
     @ns.doc(parser=parser)
     @login_required
+    @has_permissions('admin')
     def post(self):
         args = self.parser.parse_args()
         title = args.get('title')
