@@ -1,11 +1,9 @@
-from app import db
-
 from flask_restplus import Resource, Namespace, fields
+from sqlalchemy import desc
 
 from app import db
 from app.base.decorators import login_required
 from app.notice.models import Notice
-
 
 ns = Namespace('Notice', description='Notice Board')
 
@@ -18,6 +16,7 @@ notice_fields = ns.model('notice_fields', {
     'is_public': fields.Boolean
 })
 
+
 class NoticeDetail(Resource):
     def get(self, notice_id):
         notice = Notice.query.filter_by(id=notice_id)
@@ -27,7 +26,15 @@ class NoticeDetail(Resource):
         return serialized_list
 
 
-class NoticeRegister(Resource):
+class NoticeBase(Resource):
+    def get(self):
+        notices = Notice.query.order_by(desc(Notice.modified)).limit(10).all()
+        print(type(notices))
+        if not notices or len(notices) == 0:
+            ns.abort(404, message="No notice exists.")
+        serialized_list = list(map(lambda x: x.serialize(), notices))
+        return serialized_list
+
     parser = ns.parser()
     parser.add_argument("title", type=str, location='form')
     parser.add_argument("contents", location='form')
@@ -60,7 +67,7 @@ class NoticeList(Resource):
     parser = ns.parser()
     parser.add_argument('page', type=int)
     parser.add_argument('size', type=int)
-    
+
     @ns.doc(parser=parser)
     def get(self):
         args = self.parser.parse_args()
@@ -76,4 +83,4 @@ class NoticeList(Resource):
 
 ns.add_resource(NoticeDetail, '/<notice_id>')
 ns.add_resource(NoticeList, '/list')
-ns.add_resource(NoticeRegister, '')
+ns.add_resource(NoticeBase, '')
