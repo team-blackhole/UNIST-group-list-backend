@@ -1,9 +1,26 @@
 import unittest
 
+from flask import g
 from flask_testing import TestCase
 
 from app import db, app
+from app.auth.models import User, Permission
 from test.ready_local_db import Ready
+
+
+def login():
+    user = User(username='name', password='pw')
+    db.session.add(user)
+    db.session.commit()
+    g.user = user
+
+
+def login_admin():
+    admin = User(username='admin', password='pw')
+    admin.permissions.append(Permission.query.filter_by(code='admin').first())
+    db.session.add(admin)
+    db.session.commit()
+    g.user = admin
 
 
 class NoticeIntegrationTest(TestCase):
@@ -28,18 +45,19 @@ class NoticeIntegrationTest(TestCase):
         response = self.client.get('/api/v1/notice')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json), 5)
-        print(response.json[0]['is_active'])
-        self.assertEqual(len([i for i in response.json if not i['is_active'] or not i['is_public']]), 0)
+        self.assertEqual(len([i for i in response.json if not i['is_shown'] or not i['is_public']]), 0)
 
     def test_get_notice_with_login_access(self):
         """only is_shown == True contents must be returned"""
+        login()
         response = self.client.get('/api/v1/notice')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json), 6)
-        self.assertEqual(len([i for i in response.json if not i['is_active']]), 0)
+        self.assertEqual(len([i for i in response.json if not i['is_shown']]), 0)
 
     def test_get_notice_with_admin_access(self):
         """all contents (including is_shown == False) must be returned"""
+        login_admin()
         response = self.client.get('/api/v1/notice')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json), 7)

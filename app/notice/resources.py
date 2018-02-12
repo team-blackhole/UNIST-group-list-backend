@@ -1,7 +1,9 @@
+from flask import g, request
 from flask_restplus import Resource, Namespace, fields
 from sqlalchemy import desc
 
 from app import db
+from app.auth.models import User
 from app.base.decorators import login_required, has_permissions
 from app.notice.models import Notice
 
@@ -28,7 +30,23 @@ class NoticeDetail(Resource):
 
 class NoticeBase(Resource):
     def get(self):
-        notices = Notice.query.order_by(desc(Notice.modified)).limit(10).all()
+        notices = Notice.query.order_by(desc(Notice.modified))
+
+        # check if signed in
+        if hasattr(g, 'user'):
+            user = g.user
+        else:
+            auth_header = request.headers.get('Authorization', 'Null')
+            token = auth_header
+            user = User.verify_auth_token(token)
+        if not user:
+            notices = notices.filter_by(is_public=True)
+
+        # check if the user is admin
+        if not user or not user.has_permission('admin'):
+            notices = notices.filter_by(is_shown=True)
+
+        notices = notices.limit(10).all()
         if not notices or len(notices) == 0:
             ns.abort(404, message="No notice exists.")
         serialized_list = list(map(lambda x: x.serialize(), notices))
