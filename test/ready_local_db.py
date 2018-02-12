@@ -15,21 +15,33 @@ class Ready(Command):
 
     def run(self):
         # permission
+        Permission.query.delete()
         permission = Permission(name='admin', code='admin')
         db.session.add(permission)
+        db.session.commit()
 
         # dummy clubs
+        Club.query.delete()
         for _ in range(50):
-            user = User(username=fake.name(),
+            name = fake.name()
+            while User.query.filter_by(username=name).all():
+                name = fake.name()
+            user = User(username=name,
                         password='pw')
             db.session.add(user)
-            club = Club(name=fake.company(),
+
+            name = fake.company()
+            while Club.query.filter_by(name=name).all():
+                name = fake.company()
+            club = Club(name=name,
                         introduce_one_line=fake.bs(),
                         introduce_all='',  # this column also empty in post of api
                         manager=user)
             db.session.add(club)
+        db.session.commit()
 
         # dummy notices
+        Notice.query.delete()
         for _ in range(5):
             notice = Notice(title=fake.catch_phrase(),
                             contents=(fake.paragraph(nb_sentences=5, variable_nb_sentences=True,
