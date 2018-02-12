@@ -3,6 +3,8 @@ from flask_script import Command
 
 from app import db
 from app.auth.models import Permission
+from app.auth.models import User
+from app.club.models import Club
 from app.notice.models import Notice
 
 fake = Faker('ko_KR')
@@ -15,6 +17,17 @@ class Ready(Command):
         # permission
         permission = Permission(name='admin', code='admin')
         db.session.add(permission)
+
+        # dummy clubs
+        for _ in range(50):
+            user = User(username=fake.name(),
+                        password='pw')
+            db.session.add(user)
+            club = Club(name=fake.company(),
+                        introduce_one_line=fake.bs(),
+                        introduce_all='',  # this column also empty in post of api
+                        manager=user)
+            db.session.add(club)
 
         # dummy notices
         for _ in range(5):
