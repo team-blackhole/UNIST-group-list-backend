@@ -1,7 +1,9 @@
+from flask import g, request
 from flask_restplus import Resource, Namespace, fields
 from sqlalchemy import desc
 
 from app import db
+from app.auth.models import User
 from app.base.decorators import login_required, has_permissions
 from app.notice.models import Notice
 
@@ -17,19 +19,40 @@ notice_fields = ns.model('notice_fields', {
 })
 
 
-class NoticeDetail(Resource):
+class NoticeBase(Resource):
+    @staticmethod
+    def get_notices():
+        notices = Notice.query.order_by(desc(Notice.modified))
+
+        # check if signed in
+        if hasattr(g, 'user'):
+            user = g.user
+        else:
+            auth_header = request.headers.get('Authorization', 'Null')
+            token = auth_header
+            user = User.verify_auth_token(token)
+        if not user:
+            notices = notices.filter_by(is_public=True)
+
+        # check if the user is admin
+        if not user or not user.has_permission('admin'):
+            notices = notices.filter_by(is_shown=True)
+
+        return notices
+
+
+class NoticeDetail(NoticeBase):
     def get(self, notice_id):
-        notice = Notice.query.filter_by(id=notice_id)
+        notice = self.get_notices().filter_by(id=notice_id)
         if not notice or notice.count() == 0:
             ns.abort(404, message="Notice {} doesn't exist".format(notice_id))
         serialized_list = list(map(lambda x: x.serialize(), notice))
         return serialized_list
 
 
-class NoticeBase(Resource):
+class NoticeRecent(NoticeBase):
     def get(self):
-        notices = Notice.query.order_by(desc(Notice.modified)).limit(10).all()
-        print(type(notices))
+        notices = self.get_notices().limit(10).all()
         if not notices or len(notices) == 0:
             ns.abort(404, message="No notice exists.")
         serialized_list = list(map(lambda x: x.serialize(), notices))
@@ -64,7 +87,7 @@ class NoticeBase(Resource):
             ns.abort(400, message='Not enough fields for register.')
 
 
-class NoticeList(Resource):
+class NoticeList(NoticeBase):
     parser = ns.parser()
     parser.add_argument('page', type=int)
     parser.add_argument('size', type=int)
@@ -75,7 +98,7 @@ class NoticeList(Resource):
         page = args.get("page") or 1
         size = args.get("size") or 3
 
-        notice_list = Notice.query.filter_by(is_shown=True).paginate(page=page, per_page=size).items
+        notice_list = self.get_notices().filter_by(is_shown=True).paginate(page=page, per_page=size).items
         if not notice_list:
             ns.abort(404, message="Notice {} page doesn't exist".format(page))
         serialized_list = list(map(lambda x: x.serialize(), notice_list))
@@ -84,4 +107,4 @@ class NoticeList(Resource):
 
 ns.add_resource(NoticeDetail, '/<notice_id>')
 ns.add_resource(NoticeList, '/list')
-ns.add_resource(NoticeBase, '')
+ns.add_resource(NoticeRecent, '')

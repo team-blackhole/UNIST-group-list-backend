@@ -1,7 +1,8 @@
-from flask_script import Command
 from faker import Faker
+from flask_script import Command
 
 from app import db
+from app.auth.models import Permission
 from app.notice.models import Notice
 
 fake = Faker('ko_KR')
@@ -11,6 +12,11 @@ class Ready(Command):
     """ready local db to front-end development"""
 
     def run(self):
+        # permission
+        permission = Permission(name='admin', code='admin')
+        db.session.add(permission)
+
+        # dummy notices
         for _ in range(5):
             notice = Notice(title=fake.catch_phrase(),
                             contents=(fake.paragraph(nb_sentences=5, variable_nb_sentences=True,
