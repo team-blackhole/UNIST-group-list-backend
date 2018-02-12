@@ -19,3 +19,4 @@ SQLAlchemy==1.0.5
 Werkzeug==0.10.4
 WTForms==2.1
 Faker==0.8.10
+flask_testing==0.6.2
