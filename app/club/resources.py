@@ -3,6 +3,7 @@ from flask_restplus import Namespace, Resource, fields
 
 from app import db
 from app.base.decorators import login_required
+from app.auth.models import User
 from app.club.models import Club
 
 ns = Namespace('Club', description='Club api')
@@ -14,6 +15,7 @@ club_fields = ns.model('club_fields', {
     'name': fields.String,
     'introduce_one_line': fields.String,
     'introduce_all': fields.String,
+    'manager': fields.Raw
 })
 
 list_fields = ns.model('list_fields', {
@@ -27,9 +29,8 @@ list_fields = ns.model('list_fields', {
 
 def get_user_from_token():
     try:
-        auth_header = request.headers.get('Authorization', 'Token Null')
-        token = [item.encode('ascii') for item in auth_header.split(' ')]
-        user = User.verify_auth_token(token[1])
+        token = request.headers.get('Authorization', 'Null')
+        user = User.verify_auth_token(token)
         return user
     except:
         return None
@@ -66,7 +67,7 @@ class ClubBase(Resource):
         user = get_user_from_token()
 
         if club:
-            ns.abort(404, message="Club {} already exist".format(name))
+            ns.abort(404, message="Club {} already exist".format(args.get("name")))
         else:
             club = Club(name=args.get("name"),
                         introduce_one_line=args.get("introduce_one_line"),
@@ -74,7 +75,7 @@ class ClubBase(Resource):
                         manager=user)
             db.session.add(club)
             db.session.commit()
-        return club
+        return club.serialize()
 
 
 class ClubDetail(Resource):
@@ -83,7 +84,8 @@ class ClubDetail(Resource):
         club = Club.query.filter_by(id=club_id).first()
         if not club:
             ns.abort(404, message="Post {} doesn't exist".format(club_id))
-        return club
+        serialized_club = club.serialize()
+        return serialized_club
 
 
 ns.add_resource(ClubList, '/list')

@@ -18,10 +18,11 @@ class Club(db.Model):
 
     # thumbnail_image = db.Column(db.Boolean, default=False)
 
-    def __init__(self, name, introduce_one_line, introduce_all, **_):
+    def __init__(self, name, introduce_one_line, introduce_all, manager, **_):
         self.name = name
         self.introduce_one_line = introduce_one_line
         self.introduce_all = introduce_all
+        self.manager.append(manager)
 
     def __repr__(self):
         return '<Club %r>' % self.name
