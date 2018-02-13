@@ -1,0 +1,16 @@
+runtime: python
+api_version: 1
+env: flex
+threadsafe: true
+entrypoint: uwsgi --http :8080 --wsgi-file manage.py --callable app
+
+runtime_config:
+  python_version: 3
+
+# [START handlers]
+handlers:
+- url: /static
+  static_dir: static
+- url: /.*
+  script: main.app
+# [END handlers]
