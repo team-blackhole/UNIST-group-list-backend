@@ -13,7 +13,7 @@ class Club(db.Model):
     name = db.Column(db.String(50), unique=True, nullable=False)
     introduce_one_line = db.Column(db.String(512), nullable=True)
     introduce_all = db.Column(db.Text(), nullable=True)
-    is_show = db.Column(db.Boolean, default=False)
+    is_shown = db.Column(db.Boolean, default=False)
     manager = db.relationship('User', secondary=manager)
 
     # thumbnail_image = db.Column(db.Boolean, default=False)
