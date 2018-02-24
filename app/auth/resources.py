@@ -22,7 +22,7 @@ user_fields = ns.model('user_fields', {
     'modified': fields.DateTime(),
     'username': fields.String(),
     'permissions': fields.Nested(perm_fields),
-    'managingClubs': fields.Raw()
+    'managing_clubs': fields.Raw()
 })
 
 
@@ -87,31 +87,31 @@ class UserDetail(UserBase):
 
 
 class UserList(UserBase):
-    userListParser = ns.parser()
-    userListParser.add_argument('page', type=int)
-    userListParser.add_argument('size', type=int)
+    user_list_parser = ns.parser()
+    user_list_parser.add_argument('page', type=int)
+    user_list_parser.add_argument('size', type=int)
 
-    userSearchParser = ns.parser()
-    userSearchParser.add_argument('username', type=str, help='User email')
-    userSearchParser.add_argument('password', type=str, help='User password')
-    userSearchParser.add_argument('permissions', type=str, action='append')
+    user_search_parser = ns.parser()
+    user_search_parser.add_argument('username', type=str, help='User email')
+    user_search_parser.add_argument('password', type=str, help='User password')
+    user_search_parser.add_argument('permissions', type=str, action='append')
 
-    @ns.doc(parser=userListParser)
+    @ns.doc(parser=user_list_parser)
     @ns.marshal_with(user_fields)
     @login_required
     def get(self):
-        args = self.userListParser.parse_args()
+        args = self.user_list_parser.parse_args()
         page = args.get("page") or 1
         size = args.get("size") or 3
         user_list = User.query.filter_by().paginate(page=page, per_page=size).items
         serialized_list = list(map(lambda x: x.serialize(), user_list))
         return serialized_list
 
-    @ns.doc(parser=userSearchParser)    
+    @ns.doc(parser=user_search_parser)
     @ns.marshal_with(user_fields)
     @has_permissions('admin')
     def post(self):
-        parsed_args = self.userSearchParser.parse_args()
+        parsed_args = self.user_searchparser.parse_args()
         user = User(
             username=parsed_args['username']
         )

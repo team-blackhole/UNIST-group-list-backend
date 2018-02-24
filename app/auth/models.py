@@ -37,7 +37,7 @@ class User(Base):
     username = db.Column(db.String(30), nullable=False, unique=True)
     password = db.Column(db.String(128), nullable=False)
     permissions = db.relationship("Permission", secondary=assoc)
-    managingClubs = db.relationship('Club', secondary=manager)
+    managing_clubs = db.relationship('Club', secondary=manager)
 
     def __init__(self, username, **kwargs):
         self.username = username 
@@ -75,9 +75,9 @@ class User(Base):
         s = Serializer(app.config['SECRET_KEY'], expires_in = expiration)
         return s.dumps({ 'id': self.id })
 
-    def get_managingClubs_list(self):
+    def get_managing_clubs_list(self):
         club_list = []
-        for club in self.managingClubs:
+        for club in self.managing_clubs:
             club_list.append(club.name)
         return club_list
 
@@ -86,7 +86,7 @@ class User(Base):
             'id': self.id,
             'username': self.username,
             'permissions': self.permissions,
-            'managingClubs': self.get_managingClubs_list()
+            'managing_clubs': self.get_managing_clubs_list()
         }
         return serialized_data
 
