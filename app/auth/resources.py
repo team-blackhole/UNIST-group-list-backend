@@ -2,7 +2,7 @@ from flask_restplus import Resource, Namespace, fields
 
 from app import db
 from app.auth.models import User
-from app.base.decorators import login_required
+from app.base.decorators import login_required, has_permissions
 
 ns = Namespace('Auth', description='User authentication')
 
@@ -22,6 +22,7 @@ user_fields = ns.model('user_fields', {
     'modified': fields.DateTime(),
     'username': fields.String(),
     'permissions': fields.Nested(perm_fields),
+    'managing_clubs': fields.Raw()
 })
 
 
@@ -86,20 +87,31 @@ class UserDetail(UserBase):
 
 
 class UserList(UserBase):
-    parser = ns.parser()
-    parser.add_argument('username', type=str, help='User email')
-    parser.add_argument('password', type=str, help='User password')
-    parser.add_argument('permissions', type=str, action='append')
+    user_list_parser = ns.parser()
+    user_list_parser.add_argument('page', type=int)
+    user_list_parser.add_argument('size', type=int)
 
+    user_search_parser = ns.parser()
+    user_search_parser.add_argument('username', type=str, help='User email')
+    user_search_parser.add_argument('password', type=str, help='User password')
+    user_search_parser.add_argument('permissions', type=str, action='append')
+
+    @ns.doc(parser=user_list_parser)
     @ns.marshal_with(user_fields)
     @login_required
     def get(self):
-        user = User.query.all()
-        return user
+        args = self.user_list_parser.parse_args()
+        page = args.get("page") or 1
+        size = args.get("size") or 3
+        user_list = User.query.filter_by().paginate(page=page, per_page=size).items
+        serialized_list = list(map(lambda x: x.serialize(), user_list))
+        return serialized_list
 
+    @ns.doc(parser=user_search_parser)
     @ns.marshal_with(user_fields)
+    @has_permissions('admin')
     def post(self):
-        parsed_args = self.parser.parse_args()
+        parsed_args = self.user_searchparser.parse_args()
         user = User(
             username=parsed_args['username']
         )

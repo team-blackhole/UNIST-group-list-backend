@@ -1,5 +1,6 @@
 from app import app, db
 from app.base.models import Base
+from app.club.models import Club, manager
 
 from passlib.hash import pbkdf2_sha256
 from itsdangerous import (TimedJSONWebSignatureSerializer
@@ -36,6 +37,7 @@ class User(Base):
     username = db.Column(db.String(30), nullable=False, unique=True)
     password = db.Column(db.String(128), nullable=False)
     permissions = db.relationship("Permission", secondary=assoc)
+    managing_clubs = db.relationship('Club', secondary=manager)
 
     def __init__(self, username, **kwargs):
         self.username = username 
@@ -72,6 +74,21 @@ class User(Base):
     def generate_auth_token(self, expiration = 3000):
         s = Serializer(app.config['SECRET_KEY'], expires_in = expiration)
         return s.dumps({ 'id': self.id })
+
+    def get_managing_clubs_list(self):
+        club_list = []
+        for club in self.managing_clubs:
+            club_list.append(club.name)
+        return club_list
+
+    def serialize(self):
+        serialized_data = {
+            'id': self.id,
+            'username': self.username,
+            'permissions': self.permissions,
+            'managing_clubs': self.get_managing_clubs_list()
+        }
+        return serialized_data
 
     @staticmethod
     def verify_auth_token(token):
