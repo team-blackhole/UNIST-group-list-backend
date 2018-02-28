@@ -12,17 +12,19 @@ fake = Faker('ko_KR')
 
 class Ready(Command):
     """ready local db to front-end development"""
-
-    def run(self):
-        # permission
+    @staticmethod
+    def generate_permission():
         Permission.query.delete()
         permission = Permission(name='admin', code='admin')
         db.session.add(permission)
         db.session.commit()
 
-        # dummy clubs
+    @staticmethod
+    def generate_club():
         Club.query.delete()
-        for _ in range(50):
+        User.query.delete()
+
+        for _ in range(20):
             name = fake.name()
             while User.query.filter_by(username=name).all():
                 name = fake.name()
@@ -37,10 +39,36 @@ class Ready(Command):
                         introduce_one_line=fake.bs(),
                         introduce_all='',  # this column also empty in post of api
                         manager=user)
+            club.is_shown = True
             db.session.add(club)
         db.session.commit()
 
-        # dummy notices
+        # to pull below clubs up in the list
+        import time
+        time.sleep(1.1)
+
+        user = User(username='manager',
+                    password='pw')
+        db.session.add(user)
+        club = Club(name='manager`s club',
+                    introduce_one_line=fake.bs(),
+                    introduce_all='',
+                    manager=user)
+        db.session.add(club)
+        db.session.commit()
+
+        user = User(username='other manager',
+                    password='pw')
+        db.session.add(user)
+        club = Club(name='other manager`s club',
+                    introduce_one_line=fake.bs(),
+                    introduce_all='',
+                    manager=user)
+        db.session.add(club)
+        db.session.commit()
+
+    @staticmethod
+    def generate_notice():
         Notice.query.delete()
         for _ in range(5):
             notice = Notice(title=fake.catch_phrase(),
@@ -63,4 +91,9 @@ class Ready(Command):
         db.session.add(notice)
 
         db.session.commit()
+
+    def run(self):
+        self.generate_permission()
+        self.generate_club()
+        self.generate_notice()
         return

@@ -34,7 +34,8 @@ class NoticeIntegrationTest(TestCase):
 
     def setUp(self):
         db.create_all()
-        Ready().run()
+        Ready.generate_permission()
+        Ready.generate_notice()
 
     def tearDown(self):
         db.session.remove()
