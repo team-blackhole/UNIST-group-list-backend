@@ -36,6 +36,7 @@ class Club(db.Model):
     def serialize(self):
         print(self.manager.__dict__)
         serialized_data = {
+            "id": self.id,
             "name": self.name,
             "introduce_one_line": self.introduce_one_line,
             "introduce_all": self.introduce_all,
