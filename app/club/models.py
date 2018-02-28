@@ -1,4 +1,5 @@
 from app import db
+from app.base.models import Base
 
 manager = db.Table('manager',
                    db.Column('auth_user_id', db.Integer, db.ForeignKey('auth_user.id'), primary_key=True),
@@ -6,7 +7,7 @@ manager = db.Table('manager',
                    )
 
 
-class Club(db.Model):
+class Club(Base):
     __tablename__ = 'club_club'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -14,6 +15,7 @@ class Club(db.Model):
     introduce_one_line = db.Column(db.String(512), nullable=True)
     introduce_all = db.Column(db.Text(), nullable=True)
     is_shown = db.Column(db.Boolean, default=False)
+    contact = db.Column(db.String(50), nullable=True)
     manager = db.relationship('User', secondary=manager)
 
     # thumbnail_image = db.Column(db.Boolean, default=False)
@@ -34,7 +36,6 @@ class Club(db.Model):
         return manager_list
 
     def serialize(self):
-        print(self.manager.__dict__)
         serialized_data = {
             "id": self.id,
             "name": self.name,
